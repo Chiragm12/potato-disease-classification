@@ -22,23 +22,22 @@ The system uses a **Convolutional Neural Network (CNN)** trained on potato leaf 
 ## 🗂 Project Structure
 
 potato-disease-classification/
+├── api/                   # Python backend (Flask or FastAPI)
+│   └── main.py            # Handles image processing & prediction
 │
-├── api/ # Python backend (Flask or FastAPI)
-│ ├── main.py # Handles image processing & prediction
-│ └── ...
+├── frontend/              # React frontend
+│   └── (components and pages)
 │
-├── frontend/ # React frontend
-│ └── (components and pages)
+├── training/              # Model training notebook and dataset
+│   ├── train.ipynb
+│   └── PlantVillage/      # Dataset folder
 │
-├── training/ # Model training notebook and dataset
-│ ├── train.ipynb
-│ └── PlantVillage/ # Dataset folder
-│
-├── models/ # Saved model weights
-├── models.config # Model config (optional)
-├── package.json # Frontend dependencies
-├── README.md # Project documentation
-└── .gitignore # Files to ignore in Git
+├── models/                # Saved model weights
+├── models.config          # Model config (optional)
+├── package.json           # Frontend dependencies
+├── README.md              # Project documentation
+└── .gitignore             # Files to ignore in Git
+
 
 ## 🚀 How to Run
 
