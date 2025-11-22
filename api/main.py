@@ -23,8 +23,17 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-MODEL = tf.keras.models.load_model("../models/1")  # Update this path if needed
+# Load model using SavedModel format (compatible with Keras 3)
+LOADED_MODEL = tf.saved_model.load("../models/1")
+if 'serving_default' not in LOADED_MODEL.signatures:
+    raise ValueError(f"Model does not have 'serving_default' signature. Available: {list(LOADED_MODEL.signatures.keys())}")
+MODEL = LOADED_MODEL.signatures['serving_default']
 CLASS_NAMES = ["Early Blight", "Late Blight", "Healthy"]
+# Get the output key from the model signature
+output_keys = list(MODEL.structured_outputs.keys())
+if not output_keys:
+    raise ValueError("Model signature has no output keys")
+MODEL_OUTPUT_KEY = output_keys[0]
 
 @app.get("/ping")
 async def ping():
@@ -37,10 +46,14 @@ def read_file_as_image(data) -> np.ndarray:
 @app.post("/predict")
 async def predict(file: UploadFile = File(...)):
     image = read_file_as_image(await file.read())
-    image_batch = np.expand_dims(image, 0)
-    predictions = MODEL.predict(image_batch)
-    predicted_class = CLASS_NAMES[np.argmax(predictions[0])]
-    confidence = np.max(predictions[0])
+    # Convert to float32 as required by the SavedModel signature (TensorSpec expects float32)
+    image_batch = np.expand_dims(image.astype(np.float32), 0)
+    # Use the SavedModel signature interface (convert_to_tensor is more efficient than constant)
+    predictions = MODEL(tf.convert_to_tensor(image_batch))
+    # Extract the output tensor using the dynamic key
+    output = predictions[MODEL_OUTPUT_KEY].numpy()
+    predicted_class = CLASS_NAMES[np.argmax(output[0])]
+    confidence = np.max(output[0])
     return {
         'class': predicted_class,
         'confidence': float(confidence)
