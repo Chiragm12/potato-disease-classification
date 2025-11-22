@@ -47,7 +47,7 @@ def read_file_as_image(data) -> np.ndarray:
 async def predict(file: UploadFile = File(...)):
     image = read_file_as_image(await file.read())
     # Convert to float32 as required by the SavedModel signature (TensorSpec expects float32)
-    image_batch = np.expand_dims(image, 0).astype(np.float32)
+    image_batch = np.expand_dims(image.astype(np.float32), 0)
     # Use the SavedModel signature interface (convert_to_tensor is more efficient than constant)
     predictions = MODEL(tf.convert_to_tensor(image_batch))
     # Extract the output tensor using the dynamic key
