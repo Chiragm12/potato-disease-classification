@@ -27,6 +27,8 @@ app.add_middleware(
 LOADED_MODEL = tf.saved_model.load("../models/1")
 MODEL = LOADED_MODEL.signatures['serving_default']
 CLASS_NAMES = ["Early Blight", "Late Blight", "Healthy"]
+# Get the output key from the model signature
+MODEL_OUTPUT_KEY = list(MODEL.structured_outputs.keys())[0]
 
 @app.get("/ping")
 async def ping():
@@ -42,8 +44,8 @@ async def predict(file: UploadFile = File(...)):
     image_batch = np.expand_dims(image, 0).astype(np.float32)
     # Use the SavedModel signature interface
     predictions = MODEL(tf.constant(image_batch))
-    # Extract the output tensor (key name from signature: 'dense_1')
-    output = predictions['dense_1'].numpy()
+    # Extract the output tensor using the dynamic key
+    output = predictions[MODEL_OUTPUT_KEY].numpy()
     predicted_class = CLASS_NAMES[np.argmax(output[0])]
     confidence = np.max(output[0])
     return {
