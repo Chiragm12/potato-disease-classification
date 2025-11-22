@@ -23,7 +23,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-MODEL = tf.keras.models.load_model("../models/1")  # Update this path if needed
+# Load model using SavedModel format (compatible with Keras 3)
+LOADED_MODEL = tf.saved_model.load("../models/1")
+MODEL = LOADED_MODEL.signatures['serving_default']
 CLASS_NAMES = ["Early Blight", "Late Blight", "Healthy"]
 
 @app.get("/ping")
@@ -37,10 +39,13 @@ def read_file_as_image(data) -> np.ndarray:
 @app.post("/predict")
 async def predict(file: UploadFile = File(...)):
     image = read_file_as_image(await file.read())
-    image_batch = np.expand_dims(image, 0)
-    predictions = MODEL.predict(image_batch)
-    predicted_class = CLASS_NAMES[np.argmax(predictions[0])]
-    confidence = np.max(predictions[0])
+    image_batch = np.expand_dims(image, 0).astype(np.float32)
+    # Use the SavedModel signature interface
+    predictions = MODEL(tf.constant(image_batch))
+    # Extract the output tensor (key name from signature: 'dense_1')
+    output = predictions['dense_1'].numpy()
+    predicted_class = CLASS_NAMES[np.argmax(output[0])]
+    confidence = np.max(output[0])
     return {
         'class': predicted_class,
         'confidence': float(confidence)
