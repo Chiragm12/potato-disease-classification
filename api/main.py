@@ -25,10 +25,15 @@ app.add_middleware(
 
 # Load model using SavedModel format (compatible with Keras 3)
 LOADED_MODEL = tf.saved_model.load("../models/1")
+if 'serving_default' not in LOADED_MODEL.signatures:
+    raise ValueError(f"Model does not have 'serving_default' signature. Available: {list(LOADED_MODEL.signatures.keys())}")
 MODEL = LOADED_MODEL.signatures['serving_default']
 CLASS_NAMES = ["Early Blight", "Late Blight", "Healthy"]
 # Get the output key from the model signature
-MODEL_OUTPUT_KEY = list(MODEL.structured_outputs.keys())[0]
+output_keys = list(MODEL.structured_outputs.keys())
+if not output_keys:
+    raise ValueError("Model signature has no output keys")
+MODEL_OUTPUT_KEY = output_keys[0]
 
 @app.get("/ping")
 async def ping():
